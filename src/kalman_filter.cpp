@@ -68,14 +68,15 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   VectorXd y(3);
   // Tools tools;
 
+  float pxpy = px_*px_ + py_*py_;
 
-  if (fabs(px_*px_ + py_*py_) < 0.0001) {
+  if (fabs(pxpy) < 0.0001) {
     std::cout << "Calculate z_pred () - Error - Division by Zero " << std::endl;
     z_pred << 0,0,0;
     y = z - z_pred;
   } else {
 
-    z_pred << sqrt(px_*px_ + py_*py_), atan2(py_, px_), (px_*vx_+py_*vy_)/sqrt(px_*px_ + py_*py_);
+    z_pred << sqrt(pxpy), atan2(py_, px_), (px_*vx_+py_*vy_)/sqrt(pxpy);
     y = z - z_pred;
     if (y(1)>M_PI) {
       y(1) -= 2*M_PI;
