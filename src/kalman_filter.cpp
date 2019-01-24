@@ -1,4 +1,6 @@
 #include "kalman_filter.h"
+#include <iostream>
+// #include "tools.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -26,16 +28,77 @@ void KalmanFilter::Predict() {
   /**
    * TODO: predict the state
    */
+
+  x_ = F_ * x_;
+  MatrixXd Ft = F_.transpose();
+
+  P_ = F_ * P_ * Ft + Q_;
+
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
   /**
    * TODO: update the state by using Kalman Filter equations
    */
+  VectorXd z_pred = H_ * x_;
+  VectorXd y = z - z_pred;
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd Si = S.inverse();
+  MatrixXd PHt = P_ * Ht;
+  MatrixXd K = PHt * Si;
+
+  //new estimate
+  x_ = x_ + (K * y);
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
    * TODO: update the state by using Extended Kalman Filter equations
    */
+  float px_ = x_(0);
+  float py_ = x_(1);
+  float vx_ = x_(2);
+  float vy_ = x_(3);
+
+  VectorXd z_pred(3);
+  VectorXd y(3);
+  // Tools tools;
+
+
+  if (fabs(px_*px_ + py_*py_) < 0.0001) {
+    std::cout << "Calculate z_pred () - Error - Division by Zero " << std::endl;
+    z_pred << 0,0,0;
+    y = z - z_pred;
+  } else {
+
+    z_pred << sqrt(px_*px_ + py_*py_), atan2(py_, px_), (px_*vx_+py_*vy_)/sqrt(px_*px_ + py_*py_);
+    y = z - z_pred;
+    if (y(1)>M_PI) {
+      y(1) -= 2*M_PI;
+    }
+    if (y(1)<-M_PI) {
+      y(1) += 2*M_PI;
+    }
+  }
+
+  // MatrixXd Hj = tools.CalculateJacobian(x_);
+
+  MatrixXd Ht = H_.transpose();  
+
+  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd Si = S.inverse();
+  MatrixXd PHt = P_ * Ht;
+  MatrixXd K = PHt * Si;
+  
+
+  //new estimate
+  x_ = x_ + (K * y);
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
+
 }
